@@ -47,12 +47,9 @@ class Piece:
 class pawn(Piece):
     def getLegalMoves(self, board):
         lst = []
-        if self.isWhite:
-            direction = (-1, 0)
-            take = [(-1, 1), (-1, -1)]
-        else:
-            direction = (1, 0)
-            take = [(1, 1), (1, -1)]
+        moving_down = (self.isWhite == board.userWhite)
+        direction = (1, 0) if not moving_down else (-1, 0)
+        take = [(1, 1), (1, -1)] if not moving_down else [(-1, 1), (-1, -1)]
 
         new_pos = self.newpos(self.getPosition(), direction)
         if board.getloco(new_pos) == None:
@@ -166,7 +163,8 @@ class king(Piece):
         return "♚"
     
 class Board:
-    def __init__(self):
+    def __init__(self, userWhite=True):
+        self.userWhite = userWhite
         self.whiteTurn = True
         self.captured = []
 
@@ -175,16 +173,28 @@ class Board:
             'Q': queen, 'K': king, 'P': pawn
         }
 
-        self.board = [
-            ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
-            ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-            [None, None, None, None, None, None, None, None],
-            [None, None, None, None, None, None, None, None],
-            [None, None, None, None, None, None, None, None],
-            [None, None, None, None, None, None, None, None],
-            ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-            ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-        ]
+        if userWhite:
+            self.board = [
+                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+            ]
+        else:
+            self.board = [
+                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+            ]
 
         for row in range(8):
             for col in range(8):
@@ -208,6 +218,7 @@ class Board:
         if x >= 8 or y >= 8 or x < 0 or y < 0:
             return -1
         return self.board[x][y]
+
     def setloco(self, pos, piece):
         x, y = pos
         self.board[x][y] = piece
@@ -225,7 +236,6 @@ class Board:
         self.board[p1[0]][p1[1]] = None
 
     def isInCheck(self, isWhite):
-        # find the king
         king_pos = None
         for i in range(8):
             for j in range(8):
@@ -237,7 +247,6 @@ class Board:
         if king_pos is None:
             return False
 
-        # check if any enemy piece can move to the king's position
         for i in range(8):
             for j in range(8):
                 p = self.getloco((i, j))
@@ -247,11 +256,9 @@ class Board:
         return False
 
     def simulateMove(self, p1, p2):
-        # returns True if the moving side's king is still in check after the move
         p = self.getloco(p1)
         target = self.getloco(p2)
 
-        # temporarily make the move
         self.board[p2[0]][p2[1]] = p
         self.board[p1[0]][p1[1]] = None
         orig_row, orig_col = p.row, p.col
@@ -259,7 +266,6 @@ class Board:
 
         in_check = self.isInCheck(p.isWhite)
 
-        # undo the move
         self.board[p1[0]][p1[1]] = p
         self.board[p2[0]][p2[1]] = target
         p.row, p.col = orig_row, orig_col
@@ -267,7 +273,6 @@ class Board:
         return in_check
 
     def getAttackedSquares(self, isWhite):
-        # all squares attacked by the given color
         attacked = set()
         for i in range(8):
             for j in range(8):
@@ -279,7 +284,8 @@ class Board:
                             if self.getloco(np) != -1:
                                 attacked.add(np)
                     elif isinstance(p, pawn):
-                        take = [(-1, 1), (-1, -1)] if p.isWhite else [(1, 1), (1, -1)]
+                        moving_down = (p.isWhite == self.userWhite)
+                        take = [(1, 1), (1, -1)] if not moving_down else [(-1, 1), (-1, -1)]
                         for d in take:
                             attacked.add(p.newpos(p.getPosition(), d))
                     else:
@@ -332,11 +338,12 @@ class Board:
         self.board[p1[0]][p1[1]] = new_piece_type(p.isWhite, p1[0], p1[1])
 
 class Game():
-    def __init__(self, userWhite = True):
-        self.board = Board()
+    def __init__(self, userWhite=True):
         self.userWhite = userWhite
+        self.board = Board(userWhite=userWhite)
         self.letToCol = {'a':0, 'b':1, 'c':2, 'd':3, 'e':4, 'f':5, 'g':6, 'h':7}
         self.piece_map = {'R': rook, 'N': knight, 'B': bishop, 'Q': queen, 'K': king, 'P': pawn}
+        self.movesMade = []
     
     def getMove(self):
         move = input("Type your move here: ").strip()
@@ -449,7 +456,6 @@ class Game():
             if input("Type 'oops' to try again: ") == 'oops':
                 self.getMove()       
 
-        
     def checkmate(self):
         return self.board.isCheckmate(self.board.whiteTurn)
 
