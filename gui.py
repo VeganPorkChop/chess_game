@@ -1,12 +1,12 @@
 import tkinter as tk
-from chess import Board, Game, Piece, pawn, rook, knight, bishop, queen, king
+from chess import Board, Game, Piece, board960, pawn, rook, knight, bishop, queen, king, twoArmiesBoard
 
 SQUARE_SIZE = 80
 
 class ChessGUI:
-    def __init__(self, root):
+    def __init__(self, root, gameType=Board, userWhite=True):
         self.root = root
-        self.game = Game(userWhite=True)
+        self.game = Game(userWhite=userWhite, boardType=gameType)
         self.selected = None
         self.legal_moves = []    
         self.canvas = tk.Canvas(root, width=8*SQUARE_SIZE, height=8*SQUARE_SIZE)
@@ -38,6 +38,7 @@ class ChessGUI:
         if isinstance(piece, Piece) and piece.isWhite == self.game.board.whiteTurn:
             self.selected = (board_row, col)
             self.legal_moves = self.game.board.getLegalMovesForPiece(piece)
+            print(self.legal_moves)
             for move in self.legal_moves:
                 self.canvas.create_oval(
                     move[1]*SQUARE_SIZE + SQUARE_SIZE/2 - 5,
@@ -70,7 +71,8 @@ class ChessGUI:
                 promotion = True
             elif isinstance(piece, pawn) and dest_piece is None and col != self.selected[1]:
                 self.game.board.switch(self.selected, (board_row, col))
-                captured_pawn_row = board_row + (-1 if piece.isWhite == self.game.board.userWhite else 1)
+                captured_pawn_row = board_row + (-1 if not piece.isWhite == self.game.board.userWhite else 1)
+                print(f"En passant capture at {(captured_pawn_row, col)}")
                 self.game.board.setloco((captured_pawn_row, col), None)
                 pieceTaken = True
                 enpassant = True
@@ -218,6 +220,7 @@ class ChessGUI:
         
 
     def draw_board(self):
+        self.canvas.delete("all")
         for i in range(8):
             for j in range(8):
                 color = "white" if (i+j) % 2 != 0 else "gray"
@@ -230,9 +233,96 @@ class ChessGUI:
             self.canvas.create_rectangle(8*SQUARE_SIZE, 0, 8*SQUARE_SIZE + 150, 8*SQUARE_SIZE, fill="white")
             self.canvas.create_text(8*SQUARE_SIZE + 75, 20 + self.game.movesMade.index(i)*20, text=i, font=("Arial", 12), anchor="w")
 
-            
-        
 
-root = tk.Tk()
-test = ChessGUI(root)
-root.mainloop()
+
+class MainMenu:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Chess")
+        self.root.geometry("420x350")
+
+        self.settings = {
+            "Play as": ["White", "Black"],
+            "Mode": ["Standard", "Chess960", "Two Armies"]
+        }
+
+        self.setting_order = list(self.settings.keys())
+        self.setting_index = {key: 0 for key in self.settings}
+
+        self.main_frame = tk.Frame(root, padx=20, pady=20)
+        self.main_frame.pack(fill="both", expand=True)
+
+        title = tk.Label(self.main_frame, text="Chess", font=("Arial", 28, "bold"))
+        title.pack(pady=20)
+
+        self.play_button = tk.Button(
+            self.main_frame,
+            text="Play",
+            font=("Arial", 16),
+            width=14,
+            command=self.start_game
+        )
+        self.play_button.pack(pady=10)
+
+        self.settings_button = tk.Button(
+            self.main_frame,
+            text="Settings",
+            font=("Arial", 16),
+            width=14,
+            command=self.open_settings
+        )
+        self.settings_button.pack(pady=10)
+
+    def open_settings(self):
+        popup = tk.Toplevel(self.root)
+        popup.title("Settings")
+        popup.geometry("350x250")
+
+        tk.Label(popup, text="Settings", font=("Arial", 20, "bold")).pack(pady=10)
+
+        container = tk.Frame(popup)
+        container.pack(fill="both", expand=True, padx=15, pady=10)
+
+        for setting_name in self.setting_order:
+            row = tk.Frame(container)
+            row.pack(fill="x", pady=8)
+
+            tk.Label(row, text=setting_name + ":", font=("Arial", 12), width=12, anchor="w").pack(side="left")
+
+            value_label = tk.Label(
+                row,
+                text=self.get_setting_value(setting_name),
+                font=("Arial", 12, "bold"),
+                width=12
+            )
+            value_label.pack(side="left", padx=5)
+
+            tk.Button(
+                row,
+                text="Cycle",
+                command=lambda s=setting_name, lbl=value_label: self.cycle_setting(s, lbl)
+            ).pack(side="right")
+
+    def get_setting_value(self, setting_name):
+        idx = self.setting_index[setting_name]
+        return self.settings[setting_name][idx]
+
+    def cycle_setting(self, setting_name, label):
+        options = self.settings[setting_name]
+        self.setting_index[setting_name] = (self.setting_index[setting_name] + 1) % len(options)
+        label.config(text=self.get_setting_value(setting_name))
+
+    def start_game(self):
+        userWhite = self.get_setting_value("Play as") == "White"
+        boardType = Board if self.get_setting_value("Mode") == "Standard" else board960 if self.get_setting_value("Mode") == "Chess960" else twoArmiesBoard
+
+        self.root.geometry(f"{8*80 + 150}x{8*80}")
+
+        self.main_frame.destroy()
+        ChessGUI(self.root, userWhite=userWhite, gameType=boardType)
+
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = MainMenu(root)
+    root.mainloop()

@@ -1,3 +1,5 @@
+import random
+
 class Piece:
     directions = [
         (1, 0),
@@ -45,6 +47,10 @@ class Piece:
         return lst
     
 class pawn(Piece):
+    def __init__(self, isWhite, row, col):
+        super().__init__(isWhite, row, col)
+        self.canBeEnPassant = False
+
     def getLegalMoves(self, board):
         lst = []
         moving_down = (self.isWhite == board.userWhite)
@@ -54,9 +60,9 @@ class pawn(Piece):
         new_pos = self.newpos(self.getPosition(), direction)
         if board.getloco(new_pos) == None:
             lst.append(new_pos)
-            new_pos2 = self.newpos(new_pos, direction)
-            if board.getloco(new_pos2) == None and self.moves == 0:
-                lst.append(new_pos2)
+        new_pos2 = self.newpos(new_pos, direction)
+        if board.getloco(new_pos2) == None and self.moves == 0:
+            lst.append(new_pos2)
 
         for dir in take:
             diagonal = self.newpos(self.getPosition(), dir)
@@ -66,9 +72,7 @@ class pawn(Piece):
                 lst.append(diagonal)
 
             beside_piece = board.getloco(beside)
-            if (isinstance(beside_piece, pawn)
-                    and beside_piece.moves == 1
-                    and self.isWhite != beside_piece.isWhite):
+            if (isinstance(beside_piece, pawn) and beside_piece.isWhite != self.isWhite and beside_piece.canBeEnPassant):
                 lst.append(diagonal)
 
         return lst
@@ -226,10 +230,21 @@ class Board:
     def switch(self, p1: tuple, p2: tuple):
         p = self.getloco(p1)
         target = self.getloco(p2)
-        
+
         if isinstance(target, Piece):
             self.captured.append(target)
-        
+
+        # clear old en passant vulnerability
+        for i in range(8):
+            for j in range(8):
+                piece = self.getloco((i, j))
+                if isinstance(piece, pawn):
+                    piece.canBeEnPassant = False
+
+        # set new en passant vulnerability only if this pawn moved 2 squares
+        if isinstance(p, pawn) and abs(p2[0] - p1[0]) == 2:
+            p.canBeEnPassant = True
+
         p.moves += 1
         p.row, p.col = p2[0], p2[1]
         self.board[p2[0]][p2[1]] = self.board[p1[0]][p1[1]]
@@ -337,10 +352,104 @@ class Board:
         p = self.getloco(p1)
         self.board[p1[0]][p1[1]] = new_piece_type(p.isWhite, p1[0], p1[1])
 
-class Game():
+class board960(Board):
     def __init__(self, userWhite=True):
         self.userWhite = userWhite
-        self.board = Board(userWhite=userWhite)
+        self.whiteTurn = True
+        self.captured = []
+        self.piece_map = {
+            'R': rook, 'N': knight, 'B': bishop,
+            'Q': queen, 'K': king, 'P': pawn
+        }
+
+        pieces = ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R']
+        while True:
+            random.shuffle(pieces)
+            if pieces.index('K') > pieces.index('R') and pieces.index('K') < pieces.index('R', pieces.index('K') + 1):
+                break
+
+        if userWhite:
+            self.board = [
+                [p.lower() for p in pieces],
+                ['p']*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                ['P']*8,
+                pieces,
+            ]
+        else:
+            self.board = [
+                pieces,
+                ['P']*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                ['p']*8,
+                [p.lower() for p in pieces],
+            ]
+
+        for row in range(8):
+            for col in range(8):
+                cell = self.board[row][col]
+                if cell:
+                    self.board[row][col] = self.piece_map[cell.upper()](cell.isupper(), row, col)
+
+class twoArmiesBoard(Board):
+    def __init__(self, userWhite=True):
+        self.userWhite = userWhite
+        self.whiteTurn = True
+        self.captured = []
+
+        self.piece_map = {
+            'R': rook, 'N': knight, 'B': bishop,
+            'Q': queen, 'K': king, 'P': pawn
+        }
+
+        if userWhite:
+            self.board = [
+                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r','r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p','p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P','P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R','R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+            ]
+        else:
+            self.board = [
+                ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R','R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+                ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P','P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                [None]*8,
+                ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p','p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+                ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r','r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
+            ]
+
+        for row in range(8):
+            for col in range(8):
+                cell = self.board[row][col]
+                if cell:
+                    self.board[row][col] = self.piece_map[cell.upper()](cell.isupper(), row, col)
+
+
+class Game():
+    def __init__(self, userWhite=True, boardType=Board):
+        self.userWhite = userWhite
+        self.board = boardType(userWhite=userWhite)
         self.letToCol = {'a':0, 'b':1, 'c':2, 'd':3, 'e':4, 'f':5, 'g':6, 'h':7}
         self.piece_map = {'R': rook, 'N': knight, 'B': bishop, 'Q': queen, 'K': king, 'P': pawn}
         self.movesMade = []
