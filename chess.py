@@ -168,6 +168,8 @@ class king(Piece):
     
 class Board:
     def __init__(self, userWhite=True):
+        self.width_squares = 8
+        self.height_squares = 8
         self.userWhite = userWhite
         self.whiteTurn = True
         self.captured = []
@@ -181,10 +183,10 @@ class Board:
             self.board = [
                 ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
                 ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
                 ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
                 ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
             ]
@@ -192,16 +194,16 @@ class Board:
             self.board = [
                 ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
                 ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
                 ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
                 ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
             ]
 
-        for row in range(8):
-            for col in range(8):
+        for row in range(self.height_squares):
+            for col in range(self.width_squares):
                 cell = self.board[row][col]
                 if cell:
                     self.board[row][col] = self.piece_map[cell.upper()](cell.isupper(), row, col)
@@ -219,7 +221,7 @@ class Board:
     
     def getloco(self, pos):
         x, y = pos
-        if x >= 8 or y >= 8 or x < 0 or y < 0:
+        if x >= self.width_squares or y >= self.height_squares or x < 0 or y < 0:
             return -1
         return self.board[x][y]
 
@@ -235,8 +237,8 @@ class Board:
             self.captured.append(target)
 
         # clear old en passant vulnerability
-        for i in range(8):
-            for j in range(8):
+        for i in range(self.height_squares):
+            for j in range(self.width_squares):
                 piece = self.getloco((i, j))
                 if isinstance(piece, pawn):
                     piece.canBeEnPassant = False
@@ -252,8 +254,8 @@ class Board:
 
     def isInCheck(self, isWhite):
         king_pos = None
-        for i in range(8):
-            for j in range(8):
+        for i in range(self.height_squares):
+            for j in range(self.width_squares):
                 p = self.getloco((i, j))
                 if isinstance(p, king) and p.isWhite == isWhite:
                     king_pos = (i, j)
@@ -262,8 +264,8 @@ class Board:
         if king_pos is None:
             return False
 
-        for i in range(8):
-            for j in range(8):
+        for i in range(self.height_squares):
+            for j in range(self.width_squares):
                 p = self.getloco((i, j))
                 if isinstance(p, Piece) and p.isWhite != isWhite:
                     if king_pos in p.getLegalMoves(self):
@@ -289,8 +291,8 @@ class Board:
 
     def getAttackedSquares(self, isWhite):
         attacked = set()
-        for i in range(8):
-            for j in range(8):
+        for i in range(self.height_squares):
+            for j in range(self.width_squares):
                 p = self.getloco((i, j))
                 if isinstance(p, Piece) and p.isWhite == isWhite:
                     if isinstance(p, king):
@@ -334,8 +336,8 @@ class Board:
         return legal
     
     def hasAnyLegalMoves(self, isWhite):
-        for i in range(8):
-            for j in range(8):
+        for i in range(self.height_squares):
+            for j in range(self.width_squares):
                 p = self.getloco((i, j))
                 if isinstance(p, Piece) and p.isWhite == isWhite:
                     if self.getLegalMovesForPiece(p):
@@ -354,6 +356,8 @@ class Board:
 
 class board960(Board):
     def __init__(self, userWhite=True):
+        self.width_squares = 8
+        self.height_squares = 8
         self.userWhite = userWhite
         self.whiteTurn = True
         self.captured = []
@@ -371,22 +375,22 @@ class board960(Board):
         if userWhite:
             self.board = [
                 [p.lower() for p in pieces],
-                ['p']*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                ['P']*8,
+                ['p']*self.width_squares,
+                [None]*self.height_squares,
+                [None]*self.height_squares,
+                [None]*self.height_squares,
+                [None]*self.height_squares,
+                ['P']*self.width_squares,
                 pieces,
             ]
         else:
             self.board = [
                 pieces,
-                ['P']*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
+                ['P']*self.width_squares,
+                [None]*self.height_squares,
+                [None]*self.height_squares,
+                [None]*self.height_squares,
+                [None]*self.height_squares,
                 ['p']*8,
                 [p.lower() for p in pieces],
             ]
@@ -399,6 +403,8 @@ class board960(Board):
 
 class twoArmiesBoard(Board):
     def __init__(self, userWhite=True):
+        self.width_squares = 16
+        self.height_squares = 12
         self.userWhite = userWhite
         self.whiteTurn = True
         self.captured = []
@@ -412,14 +418,14 @@ class twoArmiesBoard(Board):
             self.board = [
                 ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r','r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
                 ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p','p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
                 ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P','P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
                 ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R','R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
             ]
@@ -427,24 +433,30 @@ class twoArmiesBoard(Board):
             self.board = [
                 ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R','R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
                 ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P','P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
-                [None]*8,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
+                [None]*self.width_squares,
                 ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p','p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
                 ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r','r', 'n', 'b', 'q', 'k', 'b', 'n', 'r'],
             ]
 
-        for row in range(8):
-            for col in range(8):
+        for row in range(self.height_squares):
+            for col in range(self.width_squares):
                 cell = self.board[row][col]
                 if cell:
                     self.board[row][col] = self.piece_map[cell.upper()](cell.isupper(), row, col)
 
+    def getloco(self, pos):
+        x, y = pos
+        if x >= self.height_squares or y >= self.width_squares or x < 0 or y < 0:
+            return -1
+        return self.board[x][y]
+    
 
 class Game():
     def __init__(self, userWhite=True, boardType=Board):
@@ -465,8 +477,8 @@ class Game():
                 direction = Piece.directions[3 if queenside else 2]
 
                 king_piece = None
-                for i in range(8):
-                    for j in range(8):
+                for i in range(self.board.height_squares):
+                    for j in range(self.board.width_squares):
                         p = self.board.getloco((i, j))
                         if isinstance(p, king) and p.isWhite == self.board.whiteTurn:
                             king_piece = p
@@ -503,7 +515,7 @@ class Game():
                 move = move[:-2]
 
             finalCol = self.letToCol[move[-2]]
-            finalRow = 8 - int(move[-1])
+            finalRow = self.board.height_squares - int(move[-1])
             move = move[:-2]
 
             if move.endswith('x'):
@@ -522,11 +534,11 @@ class Game():
                 if ch in self.letToCol:
                     restCol = self.letToCol[ch]
                 elif ch.isdigit():
-                    restRow = 8 - int(ch)
+                    restRow = self.board.height_squares - int(ch)
 
             lst = []
-            for i in range(8):
-                for j in range(8):
+            for i in range(self.board.height_squares):
+                for j in range(self.board.width_squares):
                     p = self.board.getloco((i, j))
                     if (isinstance(p, pieceType)
                             and p.isWhite == self.board.whiteTurn

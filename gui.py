@@ -8,12 +8,15 @@ class ChessGUI:
         self.root = root
         self.game = Game(userWhite=userWhite, boardType=gameType)
         self.selected = None
-        self.legal_moves = []    
-        self.canvas = tk.Canvas(root, width=8*SQUARE_SIZE, height=8*SQUARE_SIZE)
+        self.legal_moves = []  
+        self.width_squares = len(self.game.board.board[0])
+        self.height_squares = len(self.game.board.board)   
+        
+        self.canvas = tk.Canvas(root, width=self.width_squares*SQUARE_SIZE, height=self.height_squares*SQUARE_SIZE)
         self.canvas.pack(side=tk.LEFT)
         self.canvas.bind("<Button-1>", self.on_click)
 
-        self.moves_frame = tk.Frame(root, width=150, height=8*SQUARE_SIZE)
+        self.moves_frame = tk.Frame(root, width=150, height=self.height_squares*SQUARE_SIZE)
         self.moves_frame.pack(side=tk.RIGHT, fill=tk.BOTH, expand=True)
         
         self.moves_label = tk.Label(self.moves_frame, text="Moves:", font=("Arial", 12, "bold"))
@@ -61,7 +64,7 @@ class ChessGUI:
                 self.game.board.switch(self.selected, (board_row, col))
                 self.game.board.switch(rook_pos, rook_dest)
                 castling = True
-            elif isinstance(piece, pawn) and (board_row == 0 or board_row == 7):
+            elif isinstance(piece, pawn) and (board_row == 0 or board_row == self.height_squares - 1):
                 self.game.board.switch(self.selected, (board_row, col))
                 promoted_piece = self.promote_pawn(board_row, col)
                 if promoted_piece is None:
@@ -82,14 +85,14 @@ class ChessGUI:
                 self.game.board.switch(self.selected, (board_row, col))
 
             def get_move_notation(start, end, pieceTaken=False, promotion=False, castling=False, enpassant=False):
-                colToLet = {0:'a', 1:'b', 2:'c', 3:'d', 4:'e', 5:'f', 6:'g', 7:'h'}
+                colToLet = {0:'a', 1:'b', 2:'c', 3:'d', 4:'e', 5:'f', 6:'g', 7:'h', 8:'i', 9:'j', 10:'k', 11:'l', 12:'m', 13:'n', 14:'o', 15:'p'}
                 if castling:
                     return "O-O" if end[1] > start[1] else "O-O-O"
 
                 start_file = colToLet[start[1]]
-                start_rank = 8 - start[0]
+                start_rank = self.height_squares - start[0]
                 end_file = colToLet[end[1]]
-                end_rank = 8 - end[0]
+                end_rank = self.height_squares - end[0]
 
                 if isinstance(piece, pawn):
                     if pieceTaken:
@@ -106,8 +109,8 @@ class ChessGUI:
                 piece_char = 'N' if isinstance(piece, knight) else piece.__class__.__name__[0].upper()
 
                 same_sources = []
-                for i in range(8):
-                    for j in range(8):
+                for i in range(self.height_squares):
+                    for j in range(self.width_squares):
                         p = self.game.board.getloco((i, j))
                         if p is not None and isinstance(p, piece.__class__) and p.isWhite == piece.isWhite:
                             if (end[0], end[1]) in self.game.board.getLegalMovesForPiece(p):
@@ -116,11 +119,11 @@ class ChessGUI:
                 disamb = ''
                 if len(same_sources) > 1:
                     same_files = {colToLet[s[1]] for s in same_sources}
-                    same_ranks = {8 - s[0] for s in same_sources}
+                    same_ranks = {self.height_squares - s[0] for s in same_sources}
                     if len(same_files) > 1 and len(same_ranks) > 1:
                         if start_file not in {colToLet[s[1]] for s in same_sources if s != start}:
                             disamb = start_file
-                        elif str(start_rank) not in {str(8 - s[0]) for s in same_sources if s != start}:
+                        elif str(start_rank) not in {str(self.height_squares - s[0]) for s in same_sources if s != start}:
                             disamb = str(start_rank)
                         else:
                             disamb = f"{start_file}{start_rank}"
@@ -221,8 +224,8 @@ class ChessGUI:
 
     def draw_board(self):
         self.canvas.delete("all")
-        for i in range(8):
-            for j in range(8):
+        for i in range(self.height_squares):
+            for j in range(self.width_squares):
                 color = "white" if (i+j) % 2 != 0 else "gray"
                 self.canvas.create_rectangle(j*SQUARE_SIZE, i*SQUARE_SIZE, (j+1)*SQUARE_SIZE, (i+1)*SQUARE_SIZE, fill=color)
                 piece = self.game.board.getloco((i, j))
@@ -230,8 +233,8 @@ class ChessGUI:
                     text = piece.__str__()
                     self.canvas.create_text(j*SQUARE_SIZE + SQUARE_SIZE//2, i*SQUARE_SIZE + SQUARE_SIZE//2, text=text, font=("Arial", 40))
         for i in self.game.movesMade[:10]:
-            self.canvas.create_rectangle(8*SQUARE_SIZE, 0, 8*SQUARE_SIZE + 150, 8*SQUARE_SIZE, fill="white")
-            self.canvas.create_text(8*SQUARE_SIZE + 75, 20 + self.game.movesMade.index(i)*20, text=i, font=("Arial", 12), anchor="w")
+            self.canvas.create_rectangle(self.width_squares*SQUARE_SIZE, 0, self.width_squares*SQUARE_SIZE + 150, self.height_squares*SQUARE_SIZE, fill="white")
+            self.canvas.create_text(self.width_squares*SQUARE_SIZE + 75, 20 + self.game.movesMade.index(i)*20, text=i, font=("Arial", 12), anchor="w")
 
 
 
